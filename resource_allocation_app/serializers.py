@@ -31,5 +31,5 @@ class ResourceAllocationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ResourceAllocation
-        fields = ['id', 'health_facility', 'health_facility_id', 'description', 'personnel_count', 'duration_in_days', 'created_by', 'created_at']
+        fields = ['id', 'health_facility', 'health_facility_id', 'equipment', 'specialist', 'duration_in_days', 'created_by', 'created_at']
         read_only_fields = ['id', 'created_by', 'created_at']

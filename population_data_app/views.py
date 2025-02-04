@@ -106,29 +106,57 @@ def get_populations_by_user(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+
+
+
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def update_population(request, pk):
     try:
         population = get_object_or_404(PopulationData, pk=pk)
+        
+        # Print the current values and requested updates for debugging
+        print(f"Current values: {PopulationDataSerializer(population).data}")
+        print(f"Requested updates: {request.data}")
+        
         serializer = PopulationDataSerializer(population, data=request.data, partial=True)
+        
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                'message': 'Population data updated successfully',
+                'data': serializer.data
+            })
+        else:
+            print(f"\n Serializer error: {serializer.errors}\n")
+            # Return more detailed validation errors
+            return Response({
+                'error': 'Validation failed',
+                'details': serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
     except PopulationData.DoesNotExist:
-        return Response(
-            {'error': f'Population data with ID {pk} not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+        print(f"\n Population ID: {pk} not found\n")
+        return Response({
+            'error': f'Population data with ID {pk} not found'
+        }, status=status.HTTP_404_NOT_FOUND)
     except ValidationError as e:
-        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        print(" Validation Error\n")
+        return Response({
+            'error': 'Validation error',
+            'details': str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
-        return Response(
-            {'error': f'Failed to update population data: {str(e)}'},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
+        print(f"Unexpected error: {str(e)}")  # Log the error for debugging
+        return Response({
+            'error': 'Internal server error',
+            'details': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+        
+        
+        
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_population(request, pk):

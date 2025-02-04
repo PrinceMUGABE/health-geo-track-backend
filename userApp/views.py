@@ -101,39 +101,52 @@ def register_user(request):
 
 
 @api_view(['POST'])
-@authentication_classes([])  # Disable authentication for this endpoint
-@permission_classes([AllowAny])  # Allow access to anyone
+@authentication_classes([])
+@permission_classes([AllowAny])
 def login_user(request):
-    phone_number = request.data.get('phone')
+    email = request.data.get('email')
     password = request.data.get('password')
 
     # Basic validations
-    if not phone_number or not password:
-        return Response({"error": "Phone number and password are required."}, status=400)
+    if not email or not password:
+        return Response({"error": "Email and password are required."}, status=400)
+    
+    print(f"\n Submitted data: \n Email: {email} \n Password: {password} \n")
 
-    # Authenticate the user
-    user = authenticate(phone_number=phone_number, password=password)
+    try:
+        # First check if user exists
+        user_exists = CustomUser.objects.filter(email=email).exists()
+        if not user_exists:
+            return Response({"error": "No user found with this email."}, status=401)
 
-    if user is None:
-        return Response({"error": "Invalid phone number or password."}, status=401)
+        # Then try to authenticate
+        user = authenticate(request, email=email, password=password)
+        
+        if user is None:
+            return Response({"error": "Invalid password."}, status=401)
 
-    # Generate JWT token
-    refresh = RefreshToken.for_user(user)
+        if not user.is_active:
+            return Response({"error": "This account is inactive."}, status=401)
 
-    # Include user details in the response
-    return Response({
-        "id": user.id,
-        "phone_number": user.phone_number,
-        "email": user.email,
-        "role": user.role,
-        "created_at": user.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-        "token": {
-            "refresh": str(refresh),
-            "access": str(refresh.access_token),
-        },
-        "message": "Login successful."
-    }, status=200)
+        # Generate JWT token
+        refresh = RefreshToken.for_user(user)
 
+        return Response({
+            "id": user.id,
+            "phone_number": user.phone_number,
+            "email": user.email,
+            "role": user.role,
+            "created_at": user.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            "token": {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            },
+            "message": "Login successful."
+        }, status=200)
+
+    except Exception as e:
+        print(f"Login error: {str(e)}")
+        return Response({"error": "An error occurred during login."}, status=500)
 
 
 
@@ -156,15 +169,20 @@ from .models import CustomUser
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def reset_password(request):
-    phone_number = request.data.get('phone')
+    phone_number = request.data.get('email')
     new_password = request.data.get('new_password')
 
     # Basic validation
     if not phone_number:
-        return Response({"error": "Phone number is required."}, status=400)
+        return Response({"error": "Email is required."}, status=400)
 
     if not new_password:
         return Response({"error": "New password is required."}, status=400)
+    
+    
+    print("\n Submitted data\n ")
+    print("=" * 20)
+    print(f" Email: {phone_number}\n Password: {new_password}\n")
 
     # Validate password strength
     if len(new_password) < 6:
@@ -180,7 +198,7 @@ def reset_password(request):
 
     try:
         # Find the user
-        user = CustomUser.objects.get(phone_number=phone_number)
+        user = CustomUser.objects.get(email=phone_number)
         
     
         # Update the user's password

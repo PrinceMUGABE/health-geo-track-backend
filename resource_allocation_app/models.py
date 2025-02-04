@@ -10,9 +10,9 @@ from userApp.models import CustomUser
 # ResourceAllocation Model
 class ResourceAllocation(models.Model):
     health_facility = models.ForeignKey(HealthFacility, on_delete=models.CASCADE, related_name='allocations')
-    description = models.TextField()
+    equipment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    personnel_count = models.IntegerField()
+    specialist = models.IntegerField()
     duration_in_days = models.IntegerField()
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
